@@ -1,0 +1,51 @@
+{
+ "competitions": {
+  "uefa.champions": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "uefa.champions_qual": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "uefa.europa": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "uefa.europa.conf": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "eng.1": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "esp.1": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "ita.1": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "ger.1": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "fra.1": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "ned.1": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "por.1": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "tur.1": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "aut.1": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "nor.1": {
+   "last_scoreboard": "2026-11-01"
+  },
+  "gre.1": {
+   "last_scoreboard": "2026-11-01"
+  }
+ },
+ "fetched_at": "2026-10-24T08:55+00:00",
+ "source": "direct"
+}
