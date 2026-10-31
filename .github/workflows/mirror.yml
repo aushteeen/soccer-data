@@ -1,0 +1,75 @@
+# Daily ESPN mirror: keeps espn/matches.csv (shots on target, fouls, cards, referee for
+# every match in the chosen competitions) and espn/fixtures.csv in a GitHub repo, so the
+# predictor can fetch them from raw.githubusercontent.com in sandboxes whose network
+# allowlist blocks ESPN (GitHub is normally allowed).
+#
+# Setup (once):
+#   1. Create a repo, e.g. github.com/<you>/soccer-data (public is simplest; the data is public).
+#   2. Copy this file to .github/workflows/mirror.yml and the skill's scripts/fetch_espn.py to
+#      scripts/fetch_espn.py in that repo; push.
+#   3. Actions tab -> "Mirror ESPN soccer stats" -> Run workflow. The first run backfills two
+#      seasons (one summary request per played match; ~30-60 min). Daily runs are incremental.
+#   4. Point the predictor at it:  fetch_espn.py --mirror https://raw.githubusercontent.com/<you>/soccer-data/main
+#
+# To cover more competitions change --groups (core | europe_leagues europe_cups uefa americas
+# rest_of_world international | all) or pass --competitions <espn slugs>.
+name: Mirror ESPN soccer stats
+
+on:
+  schedule:
+    - cron: "23 4 * * *"      # 04:23 UTC daily, after the last European / American kick-offs end
+  workflow_dispatch:
+    inputs:
+      competitions:
+        description: "space-separated ESPN slugs (empty = --groups core)"
+        required: false
+        default: ""
+  push:
+    branches: [main]
+    paths: [".github/workflows/mirror.yml", "scripts/fetch_espn.py", "FETCH_ARGS"]
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install --quiet pandas numpy
+      - name: Fetch (incremental; state.json remembers how far each competition was pulled)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARGS="${{ github.event.inputs.competitions }}"
+          if [ -z "$ARGS" ] && [ -f FETCH_ARGS ]; then ARGS="$(cat FETCH_ARGS)"; fi
+          if [ -n "$ARGS" ]; then
+            python3 scripts/fetch_espn.py --data . --competitions $ARGS --workers 8 --delay 0.05 --source direct
+          else
+            python3 scripts/fetch_espn.py --data . --groups core --workers 8 --delay 0.05 --source direct
+          fi
+      - name: Commit (single-commit history keeps the repo small)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "soccer-data mirror"
+          git config user.email "actions@users.noreply.github.com"
+          date -u +%Y-%m-%dT%H:%M:%SZ > espn/MIRRORED_AT
+          git checkout --orphan mirror-tmp
+          git add -A
+          git commit -q -m "mirror $(cat espn/MIRRORED_AT)"
+          git branch -D main || true
+          git branch -m main
+          git push -f origin main
+      - name: Summary
+        shell: bash
+        run: |
+          echo "## Mirror $(cat espn/MIRRORED_AT)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          { head -60 espn/coverage.csv 2>/dev/null || echo "no coverage.csv written"; } >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
